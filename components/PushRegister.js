@@ -39,7 +39,13 @@ export default function PushRegister({ classroomId, classroomName }) {
 
   const checkSubscription = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready;
+      // IMPORTANT: navigator.serviceWorker.ready never resolves (and never
+      // rejects) if no service worker has been registered yet for this
+      // origin/browser. Register it here first (idempotent - registering an
+      // already-registered SW just returns the existing registration) so
+      // `.ready` always has something to resolve against.
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
       const sub = await registration.pushManager.getSubscription();
       setSubscribed(!!sub);
     } catch (err) {

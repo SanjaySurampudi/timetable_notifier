@@ -70,33 +70,45 @@ async function handleNotify(request) {
       return NextResponse.json({ message: 'No classes scheduled for today', time: timeString, day: dayOfWeek }, { status: 200 });
     }
 
-    // 3. Filter classes starting in the next 10 minutes
-    const upcomingClasses = classes.filter((c) => {
-      if (!c.start_time) return false;
-      const [classHr, classMin] = c.start_time.split(':').map(Number);
-      const classMinutes = classHr * 60 + classMin;
+    // 3. Filter classes starting or ending in the next 10 minutes
+    const upcomingEvents = [];
 
-      // Time difference in minutes
-      const diffMinutes = classMinutes - nowMinutes;
+    for (const c of classes) {
+      if (c.start_time) {
+        const [startHr, startMin] = c.start_time.split(':').map(Number);
+        const startMinutes = startHr * 60 + startMin;
+        const startDiff = startMinutes - nowMinutes;
+        
+        if (startDiff > 0 && startDiff <= 10) {
+          upcomingEvents.push({ ...c, eventType: 'start' });
+        }
+      }
+      
+      if (c.end_time) {
+        const [endHr, endMin] = c.end_time.split(':').map(Number);
+        const endMinutes = endHr * 60 + endMin;
+        const endDiff = endMinutes - nowMinutes;
+        
+        if (endDiff > 0 && endDiff <= 10) {
+          upcomingEvents.push({ ...c, eventType: 'end' });
+        }
+      }
+    }
 
-      // Notify if starting in [1, 10] minutes (to avoid sending after class has started)
-      return diffMinutes > 0 && diffMinutes <= 10;
-    });
-
-    if (upcomingClasses.length === 0) {
+    if (upcomingEvents.length === 0) {
       return NextResponse.json({ 
-        message: 'No classes starting in the next 10 minutes', 
+        message: 'No classes starting or ending in the next 10 minutes', 
         time: timeString, 
         day: dayOfWeek,
         totalToday: classes.length 
       }, { status: 200 });
     }
 
-    console.log(`[Cron Notify] Found ${upcomingClasses.length} upcoming classes starting soon.`);
+    console.log(`[Cron Notify] Found ${upcomingEvents.length} upcoming events (start/end).`);
     const notificationSummary = [];
 
-    // 4. Send notifications for each upcoming class
-    for (const classItem of upcomingClasses) {
+    // 4. Send notifications for each upcoming event
+    for (const classItem of upcomingEvents) {
       const classroomName = classItem.classrooms?.name || 'Classroom';
       
       // Fetch subscriptions for this classroom
@@ -121,12 +133,22 @@ async function handleNotify(request) {
       }
 
       // Prepare Web Push payload
+      const title = classItem.eventType === 'start' 
+        ? `Class Starting Soon: ${classItem.subject}`
+        : `Class Ending Soon: ${classItem.subject}`;
+      
+      const body = classItem.eventType === 'start'
+        ? `Your class starts at ${classItem.start_time.substring(0, 5)} in ${classItem.room || 'TBD'} with ${classItem.teacher || 'TBD'}.`
+        : `Your class ends at ${classItem.end_time.substring(0, 5)} in ${classItem.room || 'TBD'} with ${classItem.teacher || 'TBD'}.`;
+
       const payload = JSON.stringify({
-        title: `Class Starting Soon: ${classItem.subject}`,
-        body: `Your class starts at ${classItem.start_time.substring(0, 5)} in ${classItem.room || 'TBD'} with ${classItem.teacher || 'TBD'}.`,
+        title,
+        body,
         classroomName: classroomName,
         subject: classItem.subject,
         start_time: classItem.start_time,
+        end_time: classItem.end_time,
+        eventType: classItem.eventType,
         room: classItem.room,
         teacher: classItem.teacher,
         url: '/'

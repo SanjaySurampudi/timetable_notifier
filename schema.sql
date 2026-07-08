@@ -78,3 +78,33 @@ CREATE POLICY "Allow admin to delete subscriptions"
 ON push_subscriptions FOR DELETE 
 TO authenticated 
 USING (true);
+
+-- 4. Create Telegram Subscriptions table
+CREATE TABLE IF NOT EXISTS telegram_subscriptions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    chat_id BIGINT NOT NULL,
+    telegram_username TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE(classroom_id, chat_id)
+);
+
+ALTER TABLE telegram_subscriptions ENABLE ROW LEVEL SECURITY;
+
+-- Public can insert subscriptions
+CREATE POLICY "Allow public insert of telegram subscriptions" 
+ON telegram_subscriptions FOR INSERT 
+TO public
+WITH CHECK (true);
+
+-- Only Admin can view
+CREATE POLICY "Allow admin to view telegram subscriptions" 
+ON telegram_subscriptions FOR SELECT 
+TO authenticated 
+USING (true);
+
+-- Only Admin can delete
+CREATE POLICY "Allow admin to delete telegram subscriptions" 
+ON telegram_subscriptions FOR DELETE 
+TO authenticated 
+USING (true);

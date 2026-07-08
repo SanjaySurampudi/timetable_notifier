@@ -117,12 +117,20 @@ async function handleNotify(request) {
         .select('*')
         .eq('classroom_id', classItem.classroom_id);
 
+      // Fetch telegram subscriptions for this classroom
+      const { data: tgSubscriptions, error: tgError } = await supabaseAdmin
+        .from('telegram_subscriptions')
+        .select('*')
+        .eq('classroom_id', classItem.classroom_id);
+
       if (subsError) {
-        console.error(`Error fetching subscriptions for class ${classroomName}:`, subsError);
-        continue;
+        console.error(`Error fetching push subscriptions for class ${classroomName}:`, subsError);
+      }
+      if (tgError) {
+        console.error(`Error fetching telegram subscriptions for class ${classroomName}:`, tgError);
       }
 
-      if (!subscriptions || subscriptions.length === 0) {
+      if ((!subscriptions || subscriptions.length === 0) && (!tgSubscriptions || tgSubscriptions.length === 0)) {
         notificationSummary.push({
           subject: classItem.subject,
           classroom: classroomName,
@@ -158,7 +166,7 @@ async function handleNotify(request) {
       let failedCount = 0;
 
       // Dispatch push messages asynchronously
-      const pushPromises = subscriptions.map((sub) => {
+      const pushPromises = (subscriptions || []).map((sub) => {
         return webpush
           .sendNotification(sub.subscription, payload)
           .then(() => {
@@ -179,13 +187,50 @@ async function handleNotify(request) {
           });
       });
 
-      await Promise.all(pushPromises);
+      // Dispatch Telegram messages asynchronously
+      let tgSentCount = 0;
+      let tgFailedCount = 0;
+      const tgToken = process.env.TELEGRAM_BOT_TOKEN;
+      
+      const tgPromises = tgToken ? (tgSubscriptions || []).map(async (sub) => {
+        try {
+          const res = await fetch(`https://api.telegram.org/bot${tgToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: sub.chat_id,
+              text: `🔔 *${title}*\n\n${body}`,
+              parse_mode: 'Markdown'
+            })
+          });
+          
+          if (res.ok) {
+            tgSentCount++;
+          } else {
+            const result = await res.json();
+            tgFailedCount++;
+            if (result.error_code === 403) {
+              // Bot was blocked by the user, remove subscription
+              console.log(`[Cron Notify] Deleting blocked Telegram subscription ID: ${sub.id}`);
+              await supabaseAdmin.from('telegram_subscriptions').delete().eq('id', sub.id);
+            } else {
+              console.error(`[Cron Notify] Telegram API error for chat ${sub.chat_id}:`, result);
+            }
+          }
+        } catch (err) {
+          tgFailedCount++;
+          console.error(`[Cron Notify] Failed to send to Telegram chat ${sub.chat_id}:`, err);
+        }
+      }) : [];
+
+      await Promise.all([...pushPromises, ...tgPromises]);
 
       notificationSummary.push({
         subject: classItem.subject,
         classroom: classroomName,
-        sentCount,
-        failedCount
+        sentCount: sentCount + tgSentCount,
+        failedCount: failedCount + tgFailedCount,
+        details: { webPush: { sent: sentCount, failed: failedCount }, telegram: { sent: tgSentCount, failed: tgFailedCount } }
       });
     }
 

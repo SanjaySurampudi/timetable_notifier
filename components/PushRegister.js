@@ -167,25 +167,42 @@ export default function PushRegister({ classroomId, classroomName }) {
           </div>
         </div>
         
-        <button
-          onClick={subscribed ? handleUnsubscribe : handleSubscribe}
-          disabled={loading || !classroomId}
-          className={`btn ${subscribed ? 'btn-secondary' : 'btn-primary'} ${!classroomId ? 'btn-disabled' : ''}`}
-        >
-          {loading ? (
-            <Loader2 className="animate-spin" size={18} />
-          ) : subscribed ? (
-            <>
-              <BellOff size={16} />
-              Disable
-            </>
-          ) : (
-            <>
-              <Bell size={16} />
-              Enable Alerts
-            </>
-          )}
-        </button>
+        <div className="push-buttons" style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={subscribed ? handleUnsubscribe : handleSubscribe}
+            disabled={loading || !classroomId}
+            className={`btn ${subscribed ? 'btn-secondary' : 'btn-primary'} ${!classroomId ? 'btn-disabled' : ''}`}
+          >
+            {loading ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : subscribed ? (
+              <>
+                <BellOff size={16} />
+                Disable Browser Push
+              </>
+            ) : (
+              <>
+                <Bell size={16} />
+                Enable Browser Push
+              </>
+            )}
+          </button>
+          
+          <a
+            href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}?start=${classroomId?.replace(/-/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`btn btn-primary ${!classroomId ? 'btn-disabled' : ''}`}
+            style={{ 
+              pointerEvents: !classroomId ? 'none' : 'auto',
+              background: '#2481cc',
+              borderColor: '#2481cc'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="css-i6dzq1"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            Subscribe via Telegram
+          </a>
+        </div>
       </div>
 
       <style jsx>{`

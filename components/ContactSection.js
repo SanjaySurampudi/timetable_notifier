@@ -86,7 +86,7 @@ export default function ContactSection() {
           ) : (
             <>
               <p className="contact-description text-secondary">
-                Don't see your classroom in the list? Fill out this form and we'll save your request to the admin dashboard so they can add your timetable.
+                {"Don't see your classroom in the list? Fill out this form and we'll save your request to the admin dashboard so they can add your timetable."}
               </p>
 
               {error && (

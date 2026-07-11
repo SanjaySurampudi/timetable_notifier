@@ -11,10 +11,6 @@ export default function RequestManager({ onRequestsChanged }) {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, completed, rejected
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
   const fetchRequests = async () => {
     try {
       setLoading(true);
@@ -43,6 +39,12 @@ export default function RequestManager({ onRequestsChanged }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetchRequests();
+    }, 0);
+  }, []);
 
   const handleUpdateStatus = async (id, status) => {
     try {

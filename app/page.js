@@ -17,22 +17,6 @@ export default function HomePage() {
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [error, setError] = useState(null);
 
-  // 1. Fetch classrooms on load
-  useEffect(() => {
-    fetchClassrooms();
-  }, []);
-
-  // 2. Fetch timetable when classroom selection changes
-  useEffect(() => {
-    if (selectedClassroomId) {
-      fetchTimetable(selectedClassroomId);
-      // Cache selected classroom
-      localStorage.setItem('preferred_classroom_id', selectedClassroomId);
-    } else {
-      setSchedule([]);
-    }
-  }, [selectedClassroomId]);
-
   const fetchClassrooms = async () => {
     try {
       setLoadingClassrooms(true);
@@ -75,6 +59,28 @@ export default function HomePage() {
       setLoadingSchedule(false);
     }
   };
+
+  // 1. Fetch classrooms on load
+  useEffect(() => {
+    setTimeout(() => {
+      fetchClassrooms();
+    }, 0);
+  }, []);
+
+  // 2. Fetch timetable when classroom selection changes
+  useEffect(() => {
+    if (selectedClassroomId) {
+      setTimeout(() => {
+        fetchTimetable(selectedClassroomId);
+      }, 0);
+      // Cache selected classroom
+      localStorage.setItem('preferred_classroom_id', selectedClassroomId);
+    } else {
+      setTimeout(() => {
+        setSchedule([]);
+      }, 0);
+    }
+  }, [selectedClassroomId]);
 
   const handleClassroomChange = (e) => {
     const id = e.target.value;

@@ -18,7 +18,9 @@ export default function TimetableGrid({ schedule }) {
     // Set default tab to current local day of week
     const localDay = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
     if (DAYS.includes(localDay)) {
-      setActiveTab(localDay);
+      setTimeout(() => {
+        setActiveTab(localDay);
+      }, 0);
     }
 
     return () => clearInterval(timer);

@@ -19,33 +19,6 @@ export default function AdminPage() {
   const [loadingClassrooms, setLoadingClassrooms] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Check session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        router.push('/login');
-      } else {
-        setSession(session);
-        setCheckingAuth(false);
-        fetchClassrooms();
-        fetchRequestsCount();
-      }
-    });
-
-    // Handle session changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.push('/login');
-      } else {
-        setSession(session);
-        setCheckingAuth(false);
-        fetchRequestsCount();
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [router]);
-
   const fetchClassrooms = async () => {
     try {
       setLoadingClassrooms(true);
@@ -82,6 +55,33 @@ export default function AdminPage() {
       console.error('Error fetching requests count:', err);
     }
   };
+
+  useEffect(() => {
+    // Check session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        router.push('/login');
+      } else {
+        setSession(session);
+        setCheckingAuth(false);
+        fetchClassrooms();
+        fetchRequestsCount();
+      }
+    });
+
+    // Handle session changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        router.push('/login');
+      } else {
+        setSession(session);
+        setCheckingAuth(false);
+        fetchRequestsCount();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   if (checkingAuth) {
     return (

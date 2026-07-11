@@ -25,18 +25,6 @@ export default function PushRegister({ classroomId, classroomName }) {
 
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
-  useEffect(() => {
-    const isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
-    setSupported(isSupported);
-
-    if (isSupported) {
-      setPermission(Notification.permission);
-      checkSubscription();
-    } else {
-      setLoading(false);
-    }
-  }, [classroomId]);
-
   const checkSubscription = async () => {
     try {
       // IMPORTANT: navigator.serviceWorker.ready never resolves (and never
@@ -54,6 +42,20 @@ export default function PushRegister({ classroomId, classroomName }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+    
+    setTimeout(() => {
+      setSupported(isSupported);
+      if (isSupported) {
+        setPermission(Notification.permission);
+        checkSubscription();
+      } else {
+        setLoading(false);
+      }
+    }, 0);
+  }, [classroomId]);
 
   const handleSubscribe = async () => {
     if (!supported || !classroomId) return;

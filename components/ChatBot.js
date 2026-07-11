@@ -207,15 +207,17 @@ export default function ChatBot({ schedule, classroomName }) {
 
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      setMessages([
-        {
-          role: 'bot',
-          text: classroomName
-            ? `Hi! 👋 I'm your timetable assistant for **${classroomName}**. Ask me anything about your schedule!`
-            : `Hi! 👋 Please select a classroom first so I can answer questions about your timetable.`,
-          id: Date.now(),
-        },
-      ]);
+      setTimeout(() => {
+        setMessages([
+          {
+            role: 'bot',
+            text: classroomName
+              ? `Hi! 👋 I'm your timetable assistant for **${classroomName}**. Ask me anything about your schedule!`
+              : `Hi! 👋 Please select a classroom first so I can answer questions about your timetable.`,
+            id: Date.now(),
+          },
+        ]);
+      }, 0);
     }
   }, [isOpen, classroomName, messages.length]);
 

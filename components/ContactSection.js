@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Mail, Send, CheckCircle2, AlertCircle, MessageSquarePlus, User, BookOpen, ChevronDown } from 'lucide-react';
+import { Mail, Send, CheckCircle2, AlertCircle, MessageSquarePlus, User, BookOpen, ChevronDown, Phone, Loader2 } from 'lucide-react';
 
 export default function ContactSection() {
-  const [form, setForm] = useState({ name: '', email: '', classroom: '', message: '' });
+  const [form, setForm] = useState({ name: '', email: '', contact_number: '', classroom: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -14,26 +15,37 @@ export default function ContactSection() {
     setError(null);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.classroom.trim()) {
       setError('Please fill in your name, email, and classroom name.');
       return;
     }
 
-    // Build mailto link with pre-filled content
-    const subject = encodeURIComponent(`[Timetable Request] ${form.classroom}`);
-    const body = encodeURIComponent(
-      `Hi Admin,\n\nI would like to request timetable data for my classroom.\n\n` +
-      `Name: ${form.name}\n` +
-      `Email: ${form.email}\n` +
-      `Classroom / Section: ${form.classroom}\n\n` +
-      `Additional Info:\n${form.message || 'N/A'}\n\n` +
-      `Please add my classroom's timetable to the portal. Thank you!`
-    );
+    setSubmitting(true);
+    setError(null);
 
-    window.location.href = `mailto:admin@timetable.com?subject=${subject}&body=${body}`;
-    setSubmitted(true);
+    try {
+      const res = await fetch('/api/requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(form),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to submit request');
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -63,10 +75,10 @@ export default function ContactSection() {
                 <CheckCircle2 size={40} />
               </div>
               <h3>Request Sent! 🎉</h3>
-              <p className="text-secondary">Your email client opened with your request pre-filled. The admin will review and add your timetable soon.</p>
+              <p className="text-secondary">Your request has been saved directly to our database. The admin will review and add your classroom timetable soon.</p>
               <button
                 className="btn btn-secondary reset-btn"
-                onClick={() => { setSubmitted(false); setForm({ name: '', email: '', classroom: '', message: '' }); }}
+                onClick={() => { setSubmitted(false); setForm({ name: '', email: '', contact_number: '', classroom: '', message: '' }); }}
               >
                 Send Another Request
               </button>
@@ -74,7 +86,7 @@ export default function ContactSection() {
           ) : (
             <>
               <p className="contact-description text-secondary">
-                Don't see your classroom in the list? Fill out this form and we'll send the admin a request to add your timetable.
+                Don't see your classroom in the list? Fill out this form and we'll save your request to the admin dashboard so they can add your timetable.
               </p>
 
               {error && (
@@ -98,6 +110,7 @@ export default function ContactSection() {
                       placeholder="e.g. Ravi Kumar"
                       value={form.name}
                       onChange={handleChange}
+                      disabled={submitting}
                       required
                     />
                   </div>
@@ -113,25 +126,44 @@ export default function ContactSection() {
                       placeholder="e.g. ravi@college.edu"
                       value={form.email}
                       onChange={handleChange}
+                      disabled={submitting}
                       required
                     />
                   </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-classroom">
-                    <BookOpen size={13} /> Classroom / Section Name
-                  </label>
-                  <input
-                    id="contact-classroom"
-                    type="text"
-                    name="classroom"
-                    className="form-input"
-                    placeholder="e.g. CSE-A 3rd Year, Section B - Batch 2024"
-                    value={form.classroom}
-                    onChange={handleChange}
-                    required
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="contact-phone">
+                      <Phone size={13} /> Contact Number <span className="optional-tag">(optional)</span>
+                    </label>
+                    <input
+                      id="contact-phone"
+                      type="tel"
+                      name="contact_number"
+                      className="form-input"
+                      placeholder="e.g. +91 98765 43210"
+                      value={form.contact_number}
+                      onChange={handleChange}
+                      disabled={submitting}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="contact-classroom">
+                      <BookOpen size={13} /> Classroom / Section Name
+                    </label>
+                    <input
+                      id="contact-classroom"
+                      type="text"
+                      name="classroom"
+                      className="form-input"
+                      placeholder="e.g. CSE-A 3rd Year, Section B - Batch 2024"
+                      value={form.classroom}
+                      onChange={handleChange}
+                      disabled={submitting}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="form-group">
@@ -145,13 +177,14 @@ export default function ContactSection() {
                     placeholder="Any extra info for the admin — e.g. semester, department, faculty name..."
                     value={form.message}
                     onChange={handleChange}
+                    disabled={submitting}
                     rows={3}
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary contact-submit-btn">
-                  <Send size={16} />
-                  Send Request to Admin
+                <button type="submit" disabled={submitting} className="btn btn-primary contact-submit-btn">
+                  {submitting ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}
+                  {submitting ? 'Submitting Request...' : 'Send Request to Admin'}
                 </button>
               </form>
             </>

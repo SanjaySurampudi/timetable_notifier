@@ -108,3 +108,32 @@ CREATE POLICY "Allow admin to delete telegram subscriptions"
 ON telegram_subscriptions FOR DELETE 
 TO authenticated 
 USING (true);
+
+-- 5. Create Requests table
+CREATE TABLE IF NOT EXISTS requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    classroom TEXT NOT NULL,
+    contact_number TEXT,
+    message TEXT,
+    status TEXT DEFAULT 'pending', -- pending, completed, rejected
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE requests ENABLE ROW LEVEL SECURITY;
+
+-- Public can insert requests
+CREATE POLICY "Allow public insert of requests"
+ON requests FOR INSERT
+TO public
+WITH CHECK (true);
+
+-- Authenticated (Admin) can manage requests (view/update/delete)
+CREATE POLICY "Allow admin to manage requests"
+ON requests FOR ALL
+TO authenticated
+USING (true)
+WITH CHECK (true);
+

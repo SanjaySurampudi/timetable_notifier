@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, ShieldAlert, Loader2 } from 'lucide-react';
+import { Settings, ShieldAlert, Loader2, CalendarDays, MessageSquare } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import ClassManager from '@/components/ClassManager';
 import AdminUpload from '@/components/AdminUpload';
+import RequestManager from '@/components/RequestManager';
 
 export default function AdminPage() {
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [classrooms, setClassrooms] = useState([]);
+  const [activeTab, setActiveTab] = useState('timetables'); // timetables, requests
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [loadingClassrooms, setLoadingClassrooms] = useState(false);
@@ -25,6 +28,7 @@ export default function AdminPage() {
         setSession(session);
         setCheckingAuth(false);
         fetchClassrooms();
+        fetchRequestsCount();
       }
     });
 
@@ -35,6 +39,7 @@ export default function AdminPage() {
       } else {
         setSession(session);
         setCheckingAuth(false);
+        fetchRequestsCount();
       }
     });
 
@@ -54,6 +59,27 @@ export default function AdminPage() {
       setError('Could not retrieve classrooms from the database.');
     } finally {
       setLoadingClassrooms(false);
+    }
+  };
+
+  const fetchRequestsCount = async () => {
+    try {
+      const { data: { session: activeSession } } = await supabase.auth.getSession();
+      const token = activeSession?.access_token;
+      if (!token) return;
+
+      const res = await fetch('/api/requests', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const pendingCount = (data.requests || []).filter(r => r.status === 'pending').length;
+        setPendingRequestsCount(pendingCount);
+      }
+    } catch (err) {
+      console.error('Error fetching requests count:', err);
     }
   };
 
@@ -102,26 +128,53 @@ export default function AdminPage() {
         </div>
       )}
 
-      <div className="admin-grid">
-        {/* Left Side: Classrooms List Manager */}
-        <section className="grid-item">
-          {loadingClassrooms && classrooms.length === 0 ? (
-            <div className="section-loading">
-              <Loader2 className="animate-spin" size={24} />
-            </div>
-          ) : (
-            <ClassManager 
-              classrooms={classrooms} 
-              onClassroomsChanged={fetchClassrooms} 
-            />
+      {/* Tab Navigation */}
+      <div className="tabs-navigation">
+        <button
+          onClick={() => setActiveTab('timetables')}
+          className={`tab-btn ${activeTab === 'timetables' ? 'active' : ''}`}
+        >
+          <CalendarDays size={18} />
+          <span>Timetables & Classes</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('requests')}
+          className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`}
+        >
+          <MessageSquare size={18} />
+          <span>User Requests</span>
+          {pendingRequestsCount > 0 && (
+            <span className="pending-badge animate-pulse">{pendingRequestsCount}</span>
           )}
-        </section>
-
-        {/* Right Side: PDF Timetable Upload Form */}
-        <section className="grid-item">
-          <AdminUpload classrooms={classrooms} />
-        </section>
+        </button>
       </div>
+
+      {activeTab === 'timetables' ? (
+        <div className="admin-grid">
+          {/* Left Side: Classrooms List Manager */}
+          <section className="grid-item">
+            {loadingClassrooms && classrooms.length === 0 ? (
+              <div className="section-loading">
+                <Loader2 className="animate-spin" size={24} />
+              </div>
+            ) : (
+              <ClassManager 
+                classrooms={classrooms} 
+                onClassroomsChanged={fetchClassrooms} 
+              />
+            )}
+          </section>
+
+          {/* Right Side: PDF Timetable Upload Form */}
+          <section className="grid-item">
+            <AdminUpload classrooms={classrooms} />
+          </section>
+        </div>
+      ) : (
+        <div className="requests-section fade-in">
+          <RequestManager onRequestsChanged={fetchRequestsCount} />
+        </div>
+      )}
 
       <style jsx>{`
         .admin-header {
@@ -130,7 +183,7 @@ export default function AdminPage() {
           align-items: flex-end;
           border-bottom: 1px solid var(--glass-border);
           padding-bottom: 20px;
-          margin-bottom: 30px;
+          margin-bottom: 20px;
           flex-wrap: wrap;
           gap: 15px;
         }
@@ -148,6 +201,76 @@ export default function AdminPage() {
         .admin-email {
           color: var(--accent-purple);
           font-weight: 600;
+        }
+
+        .tabs-navigation {
+          display: flex;
+          gap: 8px;
+          margin-bottom: 24px;
+          border-bottom: 1px solid var(--glass-border);
+          padding-bottom: 8px;
+        }
+
+        .tab-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          font-size: 0.92rem;
+          font-weight: 600;
+          padding: 10px 16px;
+          cursor: pointer;
+          border-radius: var(--radius-md) var(--radius-md) 0 0;
+          transition: all var(--transition-fast);
+          position: relative;
+        }
+
+        .tab-btn:hover {
+          color: var(--text-primary);
+          background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tab-btn.active {
+          color: var(--accent-secondary);
+          background: transparent;
+        }
+
+        .tab-btn.active::after {
+          content: '';
+          position: absolute;
+          bottom: -9px;
+          left: 0;
+          width: 100%;
+          height: 2px;
+          background: var(--accent-secondary);
+          box-shadow: 0 0 8px var(--accent-secondary-glow);
+        }
+
+        .pending-badge {
+          background: var(--error);
+          color: white;
+          font-size: 0.7rem;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 10px;
+          min-width: 18px;
+          text-align: center;
+        }
+
+        @keyframes pulse {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.06); }
+          100% { transform: scale(1); }
+        }
+
+        .animate-pulse {
+          animation: pulse 2s infinite ease-in-out;
+        }
+
+        .requests-section {
+          animation: fadeIn var(--transition-normal);
         }
 
         .admin-grid {
@@ -206,3 +329,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

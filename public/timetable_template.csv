@@ -1,0 +1,7 @@
+classroom,day_of_week,subject,start_time,end_time,teacher,room
+Section A,Monday,Mathematics,09:00,10:00,Dr. Smith,Room 101
+Section A,Monday,Physics,10:00,11:00,Prof. Johnson,Lab 2
+Section A,Tuesday,Chemistry,09:00,10:30,Dr. Patel,Lab 1
+Section A,Wednesday,English,11:00,12:00,Ms. Williams,Room 203
+Section A,Thursday,Computer Science,14:00,15:30,Mr. Kumar,CS Lab
+Section A,Friday,Mathematics,09:00,10:00,Dr. Smith,Room 101

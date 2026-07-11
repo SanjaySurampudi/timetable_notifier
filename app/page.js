@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { BookOpen, AlertCircle, Loader2 } from 'lucide-react';
 import PushRegister from '@/components/PushRegister';
 import TimetableGrid from '@/components/TimetableGrid';
+import ChatBot from '@/components/ChatBot';
+import ContactSection from '@/components/ContactSection';
 
 export default function HomePage() {
   const [classrooms, setClassrooms] = useState([]);
@@ -162,6 +164,12 @@ export default function HomePage() {
           </div>
         )
       )}
+
+      {/* Contact section for requesting timetable additions */}
+      <ContactSection />
+
+      {/* Floating AI Timetable Chatbot */}
+      <ChatBot schedule={schedule} classroomName={selectedClassroomName} />
 
       <style jsx>{`
         .hero-section {

@@ -79,7 +79,7 @@ export default function LoginPage() {
       } else {
         router.push('/');
       }
-      
+
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -114,24 +114,24 @@ export default function LoginPage() {
 
         {/* Tab Controls */}
         <div className="role-tabs">
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => handleTabChange('user')}
             className={`tab-btn ${activeTab === 'user' ? 'active' : ''}`}
           >
             <User size={16} />
             <span>User</span>
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => handleTabChange('pre_admin')}
             className={`tab-btn ${activeTab === 'pre_admin' ? 'active' : ''}`}
           >
             <UserCheck size={16} />
             <span>Pre-Admin</span>
           </button>
-          <button 
-            type="button" 
+          <button
+            type="button"
             onClick={() => handleTabChange('admin')}
             className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
           >
@@ -150,8 +150,8 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
             <label className="form-label" htmlFor="username-input">
-              {activeTab === 'admin' 
-                ? 'Admin Email Address' 
+              {activeTab === 'admin'
+                ? 'Admin Email Address'
                 : 'College Roll Number / College Email'}
             </label>
             <div className="input-with-icon">
@@ -197,17 +197,9 @@ export default function LoginPage() {
               `Sign In as ${activeTab === 'admin' ? 'Admin' : activeTab === 'pre_admin' ? 'Pre-Admin' : 'User'}`
             )}
           </button>
-          </form>
-          {/* Contact Info */}
-          <div className="contact-info mt-4 text-center text-sm text-secondary">
-            <p>Contact us:</p>
-            <p>Email: {contactInfo.email || 'info@example.com'}</p>
-            <p>Phone: {contactInfo.phone || '+1-800-123-4567'}</p>
-            <p>Address: {contactInfo.address || '123 Main St, City'}</p>
-          </div>
-          {/* Contact Info Section */}
-          <ContactSection />
-        </div>
+        </form>
+        <ContactSection />
+      </div>
 
       <style jsx>{`
         .login-container {

@@ -16,6 +16,22 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const supabaseAdmin = getSupabaseAdmin();
 
+    // Get dynamic session expiry
+    const expirySeconds = await (async () => {
+      try {
+        const { data: cfg, error } = await supabaseAdmin
+          .from('app_settings')
+          .select('value')
+          .eq('key', 'session_expiry_seconds')
+          .single();
+        if (error || !cfg) return 604800;
+        const secs = parseInt(cfg.value, 10);
+        return isNaN(secs) ? 604800 : secs;
+      } catch (e) {
+        return 604800;
+      }
+    })();
+
     // 1. Admin Role Auth
     if (role === 'admin') {
       if (!password) {
@@ -35,13 +51,13 @@ export async function POST(request) {
         role: 'admin',
         userId: data.user.id,
         email: data.user.email,
-      });
+      }, expirySeconds);
 
       cookieStore.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: expirySeconds,
         path: '/',
       });
 
@@ -87,13 +103,13 @@ export async function POST(request) {
         email: preAdmin.email,
         classroom_id: preAdmin.classroom_id,
         classroom_name: preAdmin.classrooms?.name || 'Assigned Classroom',
-      });
+      }, expirySeconds);
 
       cookieStore.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: expirySeconds,
         path: '/',
       });
 
@@ -142,13 +158,13 @@ export async function POST(request) {
         roll_number: user.roll_number,
         email: user.email,
         username: user.roll_number || user.email,
-      });
+      }, expirySeconds);
 
       cookieStore.set('session_token', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
+        maxAge: expirySeconds,
         path: '/',
       });
 

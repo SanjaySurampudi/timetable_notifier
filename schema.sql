@@ -179,3 +179,14 @@ TO authenticated
 USING (true) 
 WITH CHECK (true);
 
+-- Contact Info table
+CREATE TABLE IF NOT EXISTS contact_info (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email TEXT NOT NULL,
+    phone TEXT,
+    address TEXT
+);
+
+INSERT INTO contact_info (email, phone, address)
+VALUES ('support@college.edu', '+1-800-123-4567', '123 College Ave, City, Country');
+

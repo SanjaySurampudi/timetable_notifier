@@ -3,11 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, AlertCircle, Loader2, Search, BellRing, Sparkles } from 'lucide-react';
+import { BookOpen, AlertCircle, Loader2, Search, BellRing, Sparkles, KeyRound, X } from 'lucide-react';
 import PushRegister from '@/components/PushRegister';
 import TimetableGrid from '@/components/TimetableGrid';
 import ChatBot from '@/components/ChatBot';
 import ContactSection from '@/components/ContactSection';
+import ChangePasswordForm from '@/components/ChangePasswordForm';
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function HomePage() {
   const [loadingClassrooms, setLoadingClassrooms] = useState(true);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [error, setError] = useState(null);
+  const [showChangePwd, setShowChangePwd] = useState(false);
 
   // 1. Verify User/Role Session first
   useEffect(() => {
@@ -131,9 +133,19 @@ export default function HomePage() {
     <div className="container fade-in">
       {/* Hero Welcome Header */}
       <section className="hero-section">
-        <div className="welcome-tag">
-          <Sparkles size={14} />
-          <span>Logged in as {session?.user?.roll_number || session?.user?.email || 'User'}</span>
+        <div className="welcome-tag" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Sparkles size={14} />
+            <span>Logged in as {session?.user?.roll_number || session?.user?.email || 'User'}</span>
+          </div>
+          <button 
+            type="button" 
+            onClick={() => setShowChangePwd(true)} 
+            className="btn-change-pwd"
+          >
+            <KeyRound size={12} />
+            <span>Change Password</span>
+          </button>
         </div>
         <h1 className="hero-title">Never Miss a Lecture.</h1>
         <p className="hero-subtitle text-secondary">
@@ -479,7 +491,73 @@ export default function HomePage() {
         .animate-spin {
           animation: spin 1s linear infinite;
         }
+
+        .change-password-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(10, 14, 23, 0.7);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+
+        .change-password-modal {
+          width: 90%;
+          max-width: 440px;
+          position: relative;
+        }
+
+        .change-password-modal :global(.close-btn) {
+          position: absolute;
+          top: 24px;
+          right: 24px;
+          background: transparent;
+          border: none;
+          color: var(--text-muted);
+          cursor: pointer;
+          transition: color var(--transition-fast);
+          z-index: 10;
+        }
+
+        .change-password-modal :global(.close-btn):hover {
+          color: var(--text-primary);
+        }
+
+        .btn-change-pwd {
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          font-weight: 500;
+          font-size: 0.8rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          border-radius: var(--radius-sm);
+          transition: all var(--transition-fast);
+        }
+
+        .btn-change-pwd:hover {
+          color: var(--accent-secondary);
+          background: var(--glass-highlight);
+        }
       `}</style>
+      {showChangePwd && (
+        <div className="change-password-backdrop" onClick={() => setShowChangePwd(false)}>
+          <div className="change-password-modal" onClick={(e) => e.stopPropagation()}>
+            <button className="close-btn" onClick={() => setShowChangePwd(false)} aria-label="Close modal">
+              <X size={18} />
+            </button>
+            <ChangePasswordForm />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

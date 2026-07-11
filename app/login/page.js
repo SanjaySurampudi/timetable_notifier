@@ -2,8 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ForgotPasswordForm from '@/components/ForgotPasswordForm';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, AlertCircle, Loader2, User, UserCheck, Shield } from 'lucide-react';
+import { Lock, User, UserCheck, Shield, AlertCircle, Mail, Loader2 } from 'lucide-react';
+import ContactSection from '@/components/ContactSection';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,6 +14,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showForgot, setShowForgot] = useState(false);
+  const [contactInfo, setContactInfo] = useState({ email: '', phone: '', address: '' });
 
   // Check session on load and redirect accordingly
   useEffect(() => {
@@ -29,6 +33,14 @@ export default function LoginPage() {
         }
       })
       .catch(err => console.error('Error fetching session:', err));
+
+    // Fetch contact info
+    fetch('/api/admin/contact-info')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.contact) setContactInfo(data.contact);
+      })
+      .catch((err) => console.error('Failed to load contact info', err));
   }, [router]);
 
   const handleLogin = async (e) => {
@@ -43,7 +55,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           role: activeTab,
           identifier: identifier,
-          password: activeTab === 'pre_admin' ? (password || 'anything') : password,
+          password: password,
         }),
       });
 
@@ -52,6 +64,12 @@ export default function LoginPage() {
       if (!res.ok) {
         throw new Error(data.error || 'Login failed');
       }
+
+      // Store a lightweight session hint in localStorage so Navbar renders instantly
+      localStorage.setItem('session_hint', JSON.stringify({
+        role: data.role,
+        username: data.user?.roll_number || data.user?.email || data.user?.username || '',
+      }));
 
       // Redirect depending on logged in role
       if (data.role === 'admin') {
@@ -71,7 +89,7 @@ export default function LoginPage() {
     }
   };
 
-  // Reset fields when tab changes
+
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setIdentifier('');
@@ -87,7 +105,11 @@ export default function LoginPage() {
             <Lock size={24} />
           </div>
           <h2>Timetable Portal</h2>
-          <p className="text-secondary">Sign in to access your dashboard or view schedules.</p>
+          <p className="text-secondary">
+            Sign in to access your dashboard or view schedules.
+            <button type="button" onClick={() => setShowForgot(true)} className="forgot-link btn btn-link">Forgot Password?</button>
+          </p>
+          {showForgot && <ForgotPasswordForm onClose={() => setShowForgot(false)} />}
         </div>
 
         {/* Tab Controls */}
@@ -152,18 +174,18 @@ export default function LoginPage() {
 
           <div className="form-group">
             <label className="form-label" htmlFor="password-input">
-              Password {activeTab === 'pre_admin' && <span className="text-muted">(can be anything)</span>}
+              Password
             </label>
             <div className="input-with-icon">
               <Lock size={16} className="input-icon" />
               <input
                 id="password-input"
                 type="password"
-                required={activeTab !== 'pre_admin'}
+                required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="form-input"
-                placeholder={activeTab === 'pre_admin' ? 'Enter any value...' : '••••••••'}
+                placeholder="••••••••"
               />
             </div>
           </div>
@@ -175,8 +197,17 @@ export default function LoginPage() {
               `Sign In as ${activeTab === 'admin' ? 'Admin' : activeTab === 'pre_admin' ? 'Pre-Admin' : 'User'}`
             )}
           </button>
-        </form>
-      </div>
+          </form>
+          {/* Contact Info */}
+          <div className="contact-info mt-4 text-center text-sm text-secondary">
+            <p>Contact us:</p>
+            <p>Email: {contactInfo.email || 'info@example.com'}</p>
+            <p>Phone: {contactInfo.phone || '+1-800-123-4567'}</p>
+            <p>Address: {contactInfo.address || '123 Main St, City'}</p>
+          </div>
+          {/* Contact Info Section */}
+          <ContactSection />
+        </div>
 
       <style jsx>{`
         .login-container {

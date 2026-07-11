@@ -2,6 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ForgotPasswordForm from '@/components/ForgotPasswordForm';
+import ChangePasswordForm from '@/components/ChangePasswordForm';
+import AdminContactInfoForm from '@/components/AdminContactInfoForm';
+import AppSettingsForm from '@/components/AppSettingsForm';
 import { useRouter } from 'next/navigation';
 import { 
   Settings, 
@@ -346,6 +350,13 @@ export default function AdminPage() {
           <Database size={18} />
           <span>Database Explorer</span>
         </button>
+        <button
+          onClick={() => setActiveTab('settings')}
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+        >
+          <Settings size={18} />
+          <span>Settings & Profile</span>
+        </button>
       </div>
 
       {/* 1. Timetables Tab */}
@@ -629,6 +640,23 @@ export default function AdminPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 5. Settings Tab */}
+      {activeTab === 'settings' && (
+        <div className="settings-section fade-in">
+          <div className="admin-grid">
+            <div className="grid-item">
+              <AppSettingsForm />
+              <div style={{ marginTop: '30px' }}>
+                <ChangePasswordForm />
+              </div>
+            </div>
+            <div className="grid-item">
+              <AdminContactInfoForm />
+            </div>
           </div>
         </div>
       )}

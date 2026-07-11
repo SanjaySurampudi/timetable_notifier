@@ -10,31 +10,36 @@ function addHyphensToUUID(uuidStr) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    
+
     // Check if this is a message
+    // AFTER
     if (body.message && body.message.text) {
-      const { chat, text, from } = body.message;
-      
+      const { chat, from } = body.message;
+      // In group chats Telegram appends the bot's username to commands
+      // (e.g. "/start@YourBot payload" instead of "/start payload").
+      // Strip that suffix so commands work in both private chats and groups.
+      const text = body.message.text.replace(/^(\/\w+)@\S+/, '$1');
+
       // Look for the /start command with payload
       if (text.startsWith('/start ')) {
         const payload = text.split(' ')[1];
-        
+
         if (payload) {
           const classroomId = addHyphensToUUID(payload);
-          
+
           if (classroomId) {
             const supabaseAdmin = getSupabaseAdmin();
-            
+
             // Check if classroom exists
             const { data: classroom, error: classroomError } = await supabaseAdmin
               .from('classrooms')
               .select('name')
               .eq('id', classroomId)
               .single();
-              
+
             if (!classroomError && classroom) {
               const username = from.username || from.first_name || 'User';
-              
+
               // Upsert the subscription
               const { error: upsertError } = await supabaseAdmin
                 .from('telegram_subscriptions')
@@ -43,7 +48,7 @@ export async function POST(request) {
                   chat_id: chat.id,
                   telegram_username: username
                 }, { onConflict: 'classroom_id,chat_id' });
-                
+
               if (!upsertError) {
                 await sendTelegramMessage(chat.id, `✅ Successfully subscribed to notifications for *${classroom.name}*!\n\nYou will receive a message here 10 minutes before every class.`);
               } else {
@@ -58,14 +63,14 @@ export async function POST(request) {
           }
         }
       } else if (text === '/start') {
-         await sendTelegramMessage(chat.id, `Welcome to the Timetable Notifier Bot!\n\nPlease use the "Subscribe via Telegram" button on the website to link this bot to a classroom.`);
+        await sendTelegramMessage(chat.id, `Welcome to the Timetable Notifier Bot!\n\nPlease use the "Subscribe via Telegram" button on the website to link this bot to a classroom.`);
       } else if (text === '/stop') {
-         const supabaseAdmin = getSupabaseAdmin();
-         await supabaseAdmin.from('telegram_subscriptions').delete().eq('chat_id', chat.id);
-         await sendTelegramMessage(chat.id, `You have been unsubscribed from all notifications.`);
+        const supabaseAdmin = getSupabaseAdmin();
+        await supabaseAdmin.from('telegram_subscriptions').delete().eq('chat_id', chat.id);
+        await sendTelegramMessage(chat.id, `You have been unsubscribed from all notifications.`);
       }
     }
-    
+
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     console.error('Telegram Webhook Error:', error);
@@ -77,7 +82,7 @@ export async function POST(request) {
 async function sendTelegramMessage(chatId, text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   if (!token) return;
-  
+
   try {
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',

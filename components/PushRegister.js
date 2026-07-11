@@ -45,7 +45,7 @@ export default function PushRegister({ classroomId, classroomName }) {
 
   useEffect(() => {
     const isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
-    
+
     setTimeout(() => {
       setSupported(isSupported);
       if (isSupported) {
@@ -80,7 +80,7 @@ export default function PushRegister({ classroomId, classroomName }) {
       if (!vapidPublicKey) {
         throw new Error('VAPID public key is missing in environment variables.');
       }
-      
+
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
       const sub = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -161,14 +161,14 @@ export default function PushRegister({ classroomId, classroomName }) {
           <div>
             <h3>Notifications</h3>
             <p className="text-secondary">
-              {subscribed 
-                ? `Active for ${classroomName}` 
+              {subscribed
+                ? `Active for ${classroomName}`
                 : `Get alerts before classes start in ${classroomName}`
               }
             </p>
           </div>
         </div>
-        
+
         <div className="push-buttons" style={{ display: 'flex', gap: '10px' }}>
           <button
             onClick={subscribed ? handleUnsubscribe : handleSubscribe}
@@ -189,20 +189,35 @@ export default function PushRegister({ classroomId, classroomName }) {
               </>
             )}
           </button>
-          
+
           <a
             href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}?start=${classroomId?.replace(/-/g, '')}`}
             target="_blank"
             rel="noopener noreferrer"
             className={`btn btn-primary ${!classroomId ? 'btn-disabled' : ''}`}
-            style={{ 
+            style={{
               pointerEvents: !classroomId ? 'none' : 'auto',
               background: '#2481cc',
               borderColor: '#2481cc'
             }}
           >
-            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" className="css-i6dzq1"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2L11 13"></path><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             Subscribe via Telegram
+          </a>
+
+          <a
+            href={`https://t.me/${process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME}?startgroup=${classroomId?.replace(/-/g, '')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`btn btn-secondary ${!classroomId ? 'btn-disabled' : ''}`}
+            style={{
+              pointerEvents: !classroomId ? 'none' : 'auto',
+              borderColor: '#2481cc',
+              color: '#2481cc'
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            Add Bot to a Group
           </a>
         </div>
       </div>

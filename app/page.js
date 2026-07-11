@@ -1,21 +1,47 @@
+// app/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
-import { BookOpen, AlertCircle, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { BookOpen, AlertCircle, Loader2, Search, BellRing, Sparkles } from 'lucide-react';
 import PushRegister from '@/components/PushRegister';
 import TimetableGrid from '@/components/TimetableGrid';
 import ChatBot from '@/components/ChatBot';
 import ContactSection from '@/components/ContactSection';
 
 export default function HomePage() {
+  const router = useRouter();
+  const [session, setSession] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
   const [classrooms, setClassrooms] = useState([]);
   const [selectedClassroomId, setSelectedClassroomId] = useState('');
   const [selectedClassroomName, setSelectedClassroomName] = useState('');
   const [schedule, setSchedule] = useState([]);
   
+  const [searchQuery, setSearchQuery] = useState('');
   const [loadingClassrooms, setLoadingClassrooms] = useState(true);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [error, setError] = useState(null);
+
+  // 1. Verify User/Role Session first
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.authenticated) {
+          router.push('/login');
+        } else {
+          setSession(data);
+          setCheckingAuth(false);
+          fetchClassrooms();
+        }
+      })
+      .catch((err) => {
+        console.error('Session check error:', err);
+        router.push('/login');
+      });
+  }, [router]);
 
   const fetchClassrooms = async () => {
     try {
@@ -60,42 +86,58 @@ export default function HomePage() {
     }
   };
 
-  // 1. Fetch classrooms on load
-  useEffect(() => {
-    setTimeout(() => {
-      fetchClassrooms();
-    }, 0);
-  }, []);
-
-  // 2. Fetch timetable when classroom selection changes
+  // Fetch timetable when classroom selection changes
   useEffect(() => {
     if (selectedClassroomId) {
-      setTimeout(() => {
-        fetchTimetable(selectedClassroomId);
-      }, 0);
-      // Cache selected classroom
+      fetchTimetable(selectedClassroomId);
       localStorage.setItem('preferred_classroom_id', selectedClassroomId);
     } else {
-      setTimeout(() => {
-        setSchedule([]);
-      }, 0);
+      setSchedule([]);
     }
   }, [selectedClassroomId]);
 
-  const handleClassroomChange = (e) => {
-    const id = e.target.value;
-    setSelectedClassroomId(id);
-    const cls = classrooms.find((c) => c.id === id);
-    setSelectedClassroomName(cls ? cls.name : '');
-  };
+  // Filter classrooms based on search query
+  const filteredClassrooms = classrooms.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (checkingAuth) {
+    return (
+      <div className="loading-container">
+        <Loader2 className="animate-spin text-secondary" size={40} />
+        <p className="text-secondary">Checking portal credentials...</p>
+        <style jsx>{`
+          .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: calc(70vh - 100px);
+            gap: 16px;
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          .animate-spin {
+            animation: spin 1s linear infinite;
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="container fade-in">
       {/* Hero Welcome Header */}
       <section className="hero-section">
+        <div className="welcome-tag">
+          <Sparkles size={14} />
+          <span>Logged in as {session?.user?.roll_number || session?.user?.email || 'User'}</span>
+        </div>
         <h1 className="hero-title">Never Miss a Lecture.</h1>
         <p className="hero-subtitle text-secondary">
-          Select your class, view your daily timetable, and enable push notifications to receive real-time alerts 10 minutes before every class.
+          Search your classroom section, view your daily timetable, and enable push notifications to receive real-time alerts.
         </p>
       </section>
 
@@ -106,31 +148,75 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Classroom Selection Controls */}
+      {/* Classroom Selection Controls & Search */}
       <div className="controls-grid">
         <div className="glass-card selection-card">
-          <label className="form-label" htmlFor="classroom-select">Select Classroom</label>
-          {loadingClassrooms ? (
-            <div className="dropdown-loading">
-              <Loader2 className="animate-spin text-secondary" size={20} />
-              <span>Loading classes...</span>
+          <label className="form-label" htmlFor="classroom-search">Search Section / Classroom</label>
+          <div className="search-input-wrapper">
+            <Search size={18} className="search-icon-inside" />
+            <input
+              id="classroom-search"
+              type="text"
+              placeholder="Type section (e.g. CS-A, Mechanical...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="form-input search-input"
+            />
+          </div>
+
+          {/* Search Dropdown / Filtering Results */}
+          {searchQuery && (
+            <div className="search-results-overlay">
+              {filteredClassrooms.length > 0 ? (
+                filteredClassrooms.map((cls) => (
+                  <button
+                    key={cls.id}
+                    onClick={() => {
+                      setSelectedClassroomId(cls.id);
+                      setSelectedClassroomName(cls.name);
+                      setSearchQuery(''); // clear query on select
+                    }}
+                    className={`search-result-btn ${selectedClassroomId === cls.id ? 'active-item' : ''}`}
+                  >
+                    {cls.name}
+                  </button>
+                ))
+              ) : (
+                <div className="search-no-results text-muted">No sections match "{searchQuery}"</div>
+              )}
             </div>
-          ) : classrooms.length > 0 ? (
-            <select
-              id="classroom-select"
-              value={selectedClassroomId}
-              onChange={handleClassroomChange}
-              className="form-select classroom-dropdown"
-            >
-              {classrooms.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  {cls.name}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <div className="no-classrooms-info text-muted">
-              No classrooms available. Please ask the administrator to create one.
+          )}
+
+          {/* Fallback Selector when not searching */}
+          {!searchQuery && (
+            <div className="dropdown-fallback-section">
+              <span className="text-secondary select-hint-label">Or choose from list:</span>
+              {loadingClassrooms ? (
+                <div className="dropdown-loading">
+                  <Loader2 className="animate-spin text-secondary" size={16} />
+                  <span>Loading classes...</span>
+                </div>
+              ) : classrooms.length > 0 ? (
+                <select
+                  value={selectedClassroomId}
+                  onChange={(e) => {
+                    setSelectedClassroomId(e.target.value);
+                    const cls = classrooms.find((c) => c.id === e.target.value);
+                    setSelectedClassroomName(cls ? cls.name : '');
+                  }}
+                  className="form-select classroom-dropdown"
+                >
+                  {classrooms.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="no-classrooms-info text-muted">
+                  No classrooms available. Please ask the administrator to create one.
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -166,7 +252,7 @@ export default function HomePage() {
           <div className="welcome-placeholder glass-card text-center">
             <BookOpen size={48} className="placeholder-icon" />
             <h3>No Classroom Selected</h3>
-            <p className="text-secondary">Please select or add a classroom above to view the schedule.</p>
+            <p className="text-secondary">Please search or select a classroom above to view the schedule.</p>
           </div>
         )
       )}
@@ -178,6 +264,20 @@ export default function HomePage() {
       <ChatBot schedule={schedule} classroomName={selectedClassroomName} />
 
       <style jsx>{`
+        .welcome-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: var(--accent-primary-glow);
+          border: 1px solid var(--accent-primary);
+          color: var(--accent-secondary);
+          font-size: 0.82rem;
+          font-weight: 600;
+          padding: 6px 14px;
+          border-radius: var(--radius-lg);
+          margin-bottom: 16px;
+        }
+
         .hero-section {
           text-align: center;
           margin-bottom: 40px;
@@ -218,7 +318,88 @@ export default function HomePage() {
           padding: 20px;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          position: relative;
+        }
+
+        .search-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .search-icon-inside {
+          position: absolute;
+          left: 14px;
+          color: var(--text-muted);
+          pointer-events: none;
+        }
+
+        .search-input {
+          padding-left: 42px;
+          width: 100%;
+        }
+
+        .search-results-overlay {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: var(--bg-tertiary);
+          border: 1px solid var(--glass-border);
+          border-radius: 0 0 var(--radius-md) var(--radius-md);
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+          z-index: 50;
+          max-height: 200px;
+          overflow-y: auto;
+          padding: 6px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .search-result-btn {
+          width: 100%;
+          text-align: left;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          padding: 8px 12px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          border-radius: var(--radius-sm);
+          transition: all var(--transition-fast);
+        }
+
+        .search-result-btn:hover {
+          background: var(--glass-highlight);
+          color: var(--text-primary);
+        }
+
+        .search-result-btn.active-item {
+          background: var(--accent-primary-glow);
+          color: var(--accent-secondary);
+          font-weight: 600;
+        }
+
+        .search-no-results {
+          padding: 12px;
+          text-align: center;
+          font-size: 0.88rem;
+        }
+
+        .dropdown-fallback-section {
+          margin-top: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+
+        .select-hint-label {
+          font-size: 0.78rem;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
 
         .dropdown-loading {
@@ -228,6 +409,7 @@ export default function HomePage() {
           padding: 12px;
           background: rgba(10, 14, 23, 0.4);
           border-radius: var(--radius-md);
+          font-size: 0.88rem;
         }
 
         .classroom-dropdown {

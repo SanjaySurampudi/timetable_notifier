@@ -137,3 +137,43 @@ TO authenticated
 USING (true)
 WITH CHECK (true);
 
+-- 6. Create Pre-Admins table
+CREATE TABLE IF NOT EXISTS pre_admins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    roll_number TEXT UNIQUE,
+    email TEXT UNIQUE,
+    classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT check_username_exists CHECK (roll_number IS NOT NULL OR email IS NOT NULL)
+);
+
+-- Enable RLS
+ALTER TABLE pre_admins ENABLE ROW LEVEL SECURITY;
+
+-- Policies for Pre-Admins
+CREATE POLICY "Allow admin to manage pre_admins" 
+ON pre_admins FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+
+-- 7. Create Users table
+CREATE TABLE IF NOT EXISTS users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    roll_number TEXT UNIQUE,
+    email TEXT UNIQUE,
+    password TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT check_user_identity_exists CHECK (roll_number IS NOT NULL OR email IS NOT NULL)
+);
+
+-- Enable RLS
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- Policies for Users
+CREATE POLICY "Allow admin to manage users" 
+ON users FOR ALL 
+TO authenticated 
+USING (true) 
+WITH CHECK (true);
+

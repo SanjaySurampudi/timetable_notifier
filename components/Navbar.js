@@ -1,10 +1,10 @@
+// components/Navbar.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Calendar, Lock, LayoutDashboard, LogOut, Bell } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Calendar, Lock, LayoutDashboard, LogOut, Bell, User } from 'lucide-react';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -12,26 +12,45 @@ export default function Navbar() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch unified session details
+  const fetchSession = async () => {
+    try {
+      const res = await fetch('/api/auth/session');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.authenticated) {
+          setSession(data);
+        } else {
+          setSession(null);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to retrieve session:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    fetchSession();
+    // Add custom event listener for session refresh if needed
+    window.addEventListener('session-changed', fetchSession);
+    return () => window.removeEventListener('session-changed', fetchSession);
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      setSession(null);
+      
+      // Dispatch event to update other components
+      window.dispatchEvent(new Event('session-changed'));
+      
+      router.push('/login');
+      router.refresh();
+    } catch (err) {
+      console.error('Error logging out:', err);
+    }
   };
 
   return (
@@ -43,22 +62,46 @@ export default function Navbar() {
         </Link>
 
         <nav className="nav-links">
-          <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
-            <Bell size={18} />
-            <span>Schedules</span>
-          </Link>
+          {session && (
+            <Link href="/" className={`nav-link ${pathname === '/' ? 'active' : ''}`}>
+              <Bell size={18} />
+              <span>Schedules</span>
+            </Link>
+          )}
 
           {!loading && (
             <>
               {session ? (
                 <>
-                  <Link 
-                    href="/admin" 
-                    className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}
-                  >
-                    <LayoutDashboard size={18} />
-                    <span>Dashboard</span>
-                  </Link>
+                  {session.role === 'admin' && (
+                    <Link 
+                      href="/admin" 
+                      className={`nav-link ${pathname === '/admin' ? 'active' : ''}`}
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Admin Panel</span>
+                    </Link>
+                  )}
+
+                  {session.role === 'pre_admin' && (
+                    <Link 
+                      href="/pre-admin" 
+                      className={`nav-link ${pathname === '/pre-admin' ? 'active' : ''}`}
+                    >
+                      <LayoutDashboard size={18} />
+                      <span>Class Dashboard</span>
+                    </Link>
+                  )}
+
+                  <div className="user-badge-nav">
+                    <User size={14} />
+                    <span className="badge-text" title={session.user.email || session.user.roll_number}>
+                      {session.role === 'admin' 
+                        ? 'Admin' 
+                        : (session.user.roll_number || session.user.email || 'Pre-Admin')}
+                    </span>
+                  </div>
+
                   <button onClick={handleLogout} className="logout-btn">
                     <LogOut size={16} />
                     <span>Logout</span>
@@ -70,7 +113,7 @@ export default function Navbar() {
                   className={`login-link-btn ${pathname === '/login' ? 'active' : ''}`}
                 >
                   <Lock size={16} />
-                  <span>Admin Login</span>
+                  <span>Login Portal</span>
                 </Link>
               )}
             </>
@@ -143,6 +186,26 @@ export default function Navbar() {
           border-bottom: 2px solid var(--accent-secondary);
           border-radius: var(--radius-sm) var(--radius-sm) 0 0;
           background: transparent;
+        }
+
+        .user-badge-nav {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid var(--glass-border);
+          padding: 6px 12px;
+          border-radius: var(--radius-md);
+          color: var(--accent-purple);
+          font-size: 0.85rem;
+          font-weight: 600;
+        }
+
+        .badge-text {
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
 
         .login-link-btn {

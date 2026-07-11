@@ -1,24 +1,34 @@
+// app/login/page.js
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, Mail, AlertCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { Lock, Mail, AlertCircle, Loader2, User, UserCheck, Shield } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [activeTab, setActiveTab] = useState('user'); // user, pre_admin, admin
+  const [identifier, setIdentifier] = useState(''); // Email or Roll number
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Redirect to admin dashboard if already logged in
+  // Check session on load and redirect accordingly
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.push('/admin');
-      }
-    });
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated) {
+          if (data.role === 'admin') {
+            router.push('/admin');
+          } else if (data.role === 'pre_admin') {
+            router.push('/pre-admin');
+          } else {
+            router.push('/');
+          }
+        }
+      })
+      .catch(err => console.error('Error fetching session:', err));
   }, [router]);
 
   const handleLogin = async (e) => {
@@ -27,23 +37,46 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          role: activeTab,
+          identifier: identifier,
+          password: activeTab === 'pre_admin' ? (password || 'anything') : password,
+        }),
       });
 
-      if (signInError) {
-        throw signInError;
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
       }
 
-      router.push('/admin');
+      // Redirect depending on logged in role
+      if (data.role === 'admin') {
+        router.push('/admin');
+      } else if (data.role === 'pre_admin') {
+        router.push('/pre-admin');
+      } else {
+        router.push('/');
+      }
+      
       router.refresh();
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Invalid email or password.');
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Reset fields when tab changes
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setIdentifier('');
+    setPassword('');
+    setError(null);
   };
 
   return (
@@ -53,8 +86,36 @@ export default function LoginPage() {
           <div className="lock-icon-badge">
             <Lock size={24} />
           </div>
-          <h2>Admin Access</h2>
-          <p className="text-secondary">Sign in to manage classrooms and upload schedules.</p>
+          <h2>Timetable Portal</h2>
+          <p className="text-secondary">Sign in to access your dashboard or view schedules.</p>
+        </div>
+
+        {/* Tab Controls */}
+        <div className="role-tabs">
+          <button 
+            type="button" 
+            onClick={() => handleTabChange('user')}
+            className={`tab-btn ${activeTab === 'user' ? 'active' : ''}`}
+          >
+            <User size={16} />
+            <span>User</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={() => handleTabChange('pre_admin')}
+            className={`tab-btn ${activeTab === 'pre_admin' ? 'active' : ''}`}
+          >
+            <UserCheck size={16} />
+            <span>Pre-Admin</span>
+          </button>
+          <button 
+            type="button" 
+            onClick={() => handleTabChange('admin')}
+            className={`tab-btn ${activeTab === 'admin' ? 'active' : ''}`}
+          >
+            <Shield size={16} />
+            <span>Admin</span>
+          </button>
         </div>
 
         {error && (
@@ -66,33 +127,43 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
-            <label className="form-label" htmlFor="email-input">Email Address</label>
+            <label className="form-label" htmlFor="username-input">
+              {activeTab === 'admin' 
+                ? 'Admin Email Address' 
+                : 'College Roll Number / College Email'}
+            </label>
             <div className="input-with-icon">
-              <Mail size={16} className="input-icon" />
+              {activeTab === 'admin' ? (
+                <Mail size={16} className="input-icon" />
+              ) : (
+                <User size={16} className="input-icon" />
+              )}
               <input
-                id="email-input"
-                type="email"
+                id="username-input"
+                type={activeTab === 'admin' ? 'email' : 'text'}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.value || e.target.value)}
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
                 className="form-input"
-                placeholder="admin@school.com"
+                placeholder={activeTab === 'admin' ? 'admin@college.edu' : 'e.g. 210030010 or roll@college.edu'}
               />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password-input">Password</label>
+            <label className="form-label" htmlFor="password-input">
+              Password {activeTab === 'pre_admin' && <span className="text-muted">(can be anything)</span>}
+            </label>
             <div className="input-with-icon">
               <Lock size={16} className="input-icon" />
               <input
                 id="password-input"
                 type="password"
-                required
+                required={activeTab !== 'pre_admin'}
                 value={password}
-                onChange={(e) => setPassword(e.value || e.target.value)}
+                onChange={(e) => setPassword(e.target.value)}
                 className="form-input"
-                placeholder="••••••••"
+                placeholder={activeTab === 'pre_admin' ? 'Enter any value...' : '••••••••'}
               />
             </div>
           </div>
@@ -101,7 +172,7 @@ export default function LoginPage() {
             {loading ? (
               <Loader2 className="animate-spin" size={18} />
             ) : (
-              'Sign In'
+              `Sign In as ${activeTab === 'admin' ? 'Admin' : activeTab === 'pre_admin' ? 'Pre-Admin' : 'User'}`
             )}
           </button>
         </form>
@@ -117,41 +188,78 @@ export default function LoginPage() {
 
         .login-card {
           width: 100%;
-          max-width: 420px;
-          padding: 40px 30px;
+          max-width: 450px;
+          padding: 35px 25px;
         }
 
         .login-header {
           text-align: center;
-          margin-bottom: 30px;
+          margin-bottom: 25px;
         }
 
         .lock-icon-badge {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 60px;
-          height: 60px;
+          width: 54px;
+          height: 54px;
           border-radius: var(--radius-lg);
           background: var(--accent-primary-glow);
           border: 1px solid var(--accent-primary);
           color: var(--accent-secondary);
-          margin-bottom: 16px;
+          margin-bottom: 12px;
         }
 
         h2 {
-          font-size: 1.8rem;
-          margin-bottom: 8px;
+          font-size: 1.6rem;
+          margin-bottom: 6px;
         }
 
         p {
-          font-size: 0.9rem;
+          font-size: 0.88rem;
+        }
+
+        .role-tabs {
+          display: flex;
+          background: rgba(10, 14, 23, 0.5);
+          border: 1px solid var(--glass-border);
+          padding: 4px;
+          border-radius: var(--radius-md);
+          margin-bottom: 25px;
+          gap: 4px;
+        }
+
+        .role-tabs .tab-btn {
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          padding: 8px 0;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          border-radius: var(--radius-sm);
+          transition: all var(--transition-fast);
+        }
+
+        .role-tabs .tab-btn:hover {
+          color: var(--text-primary);
+        }
+
+        .role-tabs .tab-btn.active {
+          background: var(--accent-primary-glow);
+          color: var(--accent-secondary);
+          border: 1px solid var(--accent-primary);
         }
 
         .login-form {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 16px;
         }
 
         .input-with-icon {
@@ -173,7 +281,7 @@ export default function LoginPage() {
         }
 
         .submit-btn {
-          margin-top: 15px;
+          margin-top: 10px;
           width: 100%;
           height: 48px;
         }

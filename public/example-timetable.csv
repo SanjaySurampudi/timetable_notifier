@@ -1,0 +1,17 @@
+day_of_week,subject,start_time,end_time,teacher,room
+Monday,Mathematics II,09:00,10:00,Dr. Ramesh Kumar,LH-101
+Monday,Data Structures,10:00,11:00,Prof. Anitha Reddy,LH-101
+Monday,Physics Lab,11:30,13:30,Dr. Vijay Sharma,Lab-A
+Tuesday,English Communication,09:00,10:00,Mrs. Priya Nair,LH-202
+Tuesday,Mathematics II,10:00,11:00,Dr. Ramesh Kumar,LH-101
+Tuesday,Computer Networks,14:00,15:00,Prof. Sanjay Rao,LH-303
+Wednesday,Data Structures,09:00,10:00,Prof. Anitha Reddy,LH-101
+Wednesday,Engineering Drawing,10:00,12:00,Mr. Arun Verma,Drawing Hall
+Wednesday,Computer Networks,14:00,15:00,Prof. Sanjay Rao,LH-303
+Thursday,Physics Lab,09:00,11:00,Dr. Vijay Sharma,Lab-A
+Thursday,English Communication,11:00,12:00,Mrs. Priya Nair,LH-202
+Thursday,Mathematics II,14:00,15:00,Dr. Ramesh Kumar,LH-101
+Friday,Data Structures,09:00,10:00,Prof. Anitha Reddy,LH-101
+Friday,Computer Networks,10:00,11:00,Prof. Sanjay Rao,LH-303
+Friday,Engineering Drawing,14:00,16:00,Mr. Arun Verma,Drawing Hall
+Saturday,Seminar,10:00,12:00,HOD,Auditorium

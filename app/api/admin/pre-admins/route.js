@@ -34,7 +34,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { roll_number, email, classroom_id } = body;
+    const { roll_number, email, classroom_id, password } = body;
 
     if (!classroom_id) {
       return NextResponse.json({ error: 'Classroom ID is required' }, { status: 400 });
@@ -44,11 +44,16 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Either roll number or college email is required' }, { status: 400 });
     }
 
+    if (!password || password.trim() === '') {
+      return NextResponse.json({ error: 'Password is required for pre-admin' }, { status: 400 });
+    }
+
     const supabaseAdmin = getSupabaseAdmin();
     const insertData = {
       classroom_id,
+      password: password.trim(),
       roll_number: roll_number?.trim() || null,
-      email: email?.trim() || null
+      email: email?.trim() || null,
     };
 
     const { data, error } = await supabaseAdmin

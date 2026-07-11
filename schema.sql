@@ -142,10 +142,12 @@ CREATE TABLE IF NOT EXISTS pre_admins (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     roll_number TEXT UNIQUE,
     email TEXT UNIQUE,
+    password TEXT NOT NULL,
     classroom_id UUID NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
     CONSTRAINT check_username_exists CHECK (roll_number IS NOT NULL OR email IS NOT NULL)
 );
+
 
 -- Enable RLS
 ALTER TABLE pre_admins ENABLE ROW LEVEL SECURITY;

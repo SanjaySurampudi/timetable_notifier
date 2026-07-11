@@ -22,7 +22,6 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Password is required for admin' }, { status: 400 });
       }
 
-      // Login using Supabase Auth
       const { data, error } = await supabase.auth.signInWithPassword({
         email: identifier,
         password: password,
@@ -32,7 +31,6 @@ export async function POST(request) {
         return NextResponse.json({ error: error.message }, { status: 401 });
       }
 
-      // Generate custom session token
       const sessionToken = await signSession({
         role: 'admin',
         userId: data.user.id,
@@ -43,7 +41,7 @@ export async function POST(request) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60, // 7 days
+        maxAge: 7 * 24 * 60 * 60,
         path: '/',
       });
 
@@ -55,9 +53,12 @@ export async function POST(request) {
       });
     }
 
-    // 2. Pre-Admin Role Auth
+    // 2. Pre-Admin Role Auth (now requires password)
     if (role === 'pre_admin') {
-      // Find matching pre-admin by roll number or email
+      if (!password) {
+        return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+      }
+
       const { data, error } = await supabaseAdmin
         .from('pre_admins')
         .select('*, classrooms(name)')
@@ -74,7 +75,11 @@ export async function POST(request) {
 
       const preAdmin = data[0];
 
-      // Sign custom token (ignores password since password can be "anything")
+      // Validate password
+      if (preAdmin.password !== password) {
+        return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
+      }
+
       const sessionToken = await signSession({
         role: 'pre_admin',
         id: preAdmin.id,
@@ -111,7 +116,6 @@ export async function POST(request) {
         return NextResponse.json({ error: 'Password is required' }, { status: 400 });
       }
 
-      // Find matching user by roll number or email
       const { data, error } = await supabaseAdmin
         .from('users')
         .select('*')
@@ -128,12 +132,10 @@ export async function POST(request) {
 
       const user = data[0];
 
-      // Match password
       if (user.password !== password) {
         return NextResponse.json({ error: 'Invalid username or password.' }, { status: 401 });
       }
 
-      // Generate custom session token
       const sessionToken = await signSession({
         role: 'user',
         id: user.id,

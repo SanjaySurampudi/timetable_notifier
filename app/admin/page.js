@@ -39,6 +39,7 @@ export default function AdminPage() {
   // Add Pre-Admin Form State
   const [paRoll, setPaRoll] = useState('');
   const [paEmail, setPaEmail] = useState('');
+  const [paPassword, setPaPassword] = useState('');
   const [paClassroom, setPaClassroom] = useState('');
   const [addingPa, setAddingPa] = useState(false);
 
@@ -167,6 +168,10 @@ export default function AdminPage() {
       setError('Please provide at least a Roll Number or an Email for the pre-admin.');
       return;
     }
+    if (!paPassword.trim()) {
+      setError('Password is required for pre-admin.');
+      return;
+    }
 
     setAddingPa(true);
     setError(null);
@@ -177,6 +182,7 @@ export default function AdminPage() {
         body: JSON.stringify({
           roll_number: paRoll.trim() || null,
           email: paEmail.trim() || null,
+          password: paPassword.trim(),
           classroom_id: paClassroom
         })
       });
@@ -185,6 +191,7 @@ export default function AdminPage() {
       
       setPaRoll('');
       setPaEmail('');
+      setPaPassword('');
       fetchLoginsData();
     } catch (err) {
       setError(err.message);
@@ -404,6 +411,16 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="form-group">
+                    <label className="form-label">Login Password</label>
+                    <input 
+                      type="text" 
+                      placeholder="Set a login password" 
+                      value={paPassword} 
+                      onChange={e => setPaPassword(e.target.value)} 
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
                     <label className="form-label">Assign Classroom Section</label>
                     {classrooms.length > 0 ? (
                       <select 
@@ -440,6 +457,7 @@ export default function AdminPage() {
                               {pa.email && <span className="identifier-badge">Email: {pa.email}</span>}
                             </div>
                             <span className="assigned-classroom-name">Room: {pa.classrooms?.name}</span>
+                            <span className="plain-pwd text-muted">Password: <code className="pwd-text">{pa.password}</code></span>
                           </div>
                           <button onClick={() => handleDeletePreAdmin(pa.id)} className="delete-cred-btn"><Trash2 size={14} /></button>
                         </div>

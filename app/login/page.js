@@ -89,7 +89,6 @@ export default function LoginPage() {
     }
   };
 
-
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setIdentifier('');
@@ -100,6 +99,7 @@ export default function LoginPage() {
   return (
     <div className="container login-container fade-in">
       <div className="login-card glass-card">
+        { }
         <div className="login-header">
           <div className="lock-icon-badge">
             <Lock size={24} />
@@ -107,7 +107,6 @@ export default function LoginPage() {
           <h2>Timetable Portal</h2>
           <p className="text-secondary">
             Sign in to access your dashboard or view schedules.
-            <button type="button" onClick={() => setShowForgot(true)} className="forgot-link btn btn-link">Forgot Password?</button>
           </p>
           {showForgot && <ForgotPasswordForm onClose={() => setShowForgot(false)} />}
         </div>
@@ -147,6 +146,7 @@ export default function LoginPage() {
           </div>
         )}
 
+        { }
         <form onSubmit={handleLogin} className="login-form">
           <div className="form-group">
             <label className="form-label" htmlFor="username-input">
@@ -190,17 +190,27 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} className="btn btn-primary submit-btn">
-            {loading ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              `Sign In as ${activeTab === 'admin' ? 'Admin' : activeTab === 'pre_admin' ? 'Pre-Admin' : 'User'}`
-            )}
-          </button>
+          <div className="form-actions">
+            <button type="submit" disabled={loading} className="btn btn-primary submit-btn">
+              {loading ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                `Sign In`
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForgot(true)}
+              className="btn btn-link forgot-btn"
+            >
+              Forgot Password?
+            </button>
+          </div>
         </form>
         <ContactSection />
       </div>
 
+      { }
       <style jsx>{`
         .login-container {
           display: flex;
@@ -303,10 +313,34 @@ export default function LoginPage() {
           pointer-events: none;
         }
 
-        .submit-btn {
+        .form-actions {
+          display: flex;
+          align-items: center;
+          gap: 12px;
           margin-top: 10px;
           width: 100%;
+        }
+
+        .submit-btn {
+          flex: 1;
           height: 48px;
+        }
+
+        .forgot-btn {
+          background: transparent;
+          border: none;
+          color: var(--accent-secondary, #3b82f6);
+          font-size: 0.88rem;
+          font-weight: 500;
+          cursor: pointer;
+          white-space: nowrap;
+          padding: 8px 12px;
+          transition: opacity 0.2s;
+        }
+
+        .forgot-btn:hover {
+          text-decoration: underline;
+          opacity: 0.85;
         }
 
         .error-banner {
